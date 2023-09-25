@@ -15,19 +15,12 @@
  */
 package com.hazelcast.rest.controller;
 
-import com.hazelcast.rest.constant.Paths;
-import com.hazelcast.rest.security.CustomSecurityContext;
-import com.hazelcast.rest.service.AccessControlServiceImpl;
-import com.hazelcast.rest.service.MapService;
-import com.hazelcast.rest.util.LoginContextHolder;
-import com.hazelcast.security.permission.ActionConstants;
-import com.hazelcast.security.permission.MapPermission;
+import com.hazelcast.spi.impl.NodeEngineImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,33 +29,20 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.net.InetAddress;
-
-
 @RestController
-@RequestMapping(Paths.V1_MAP_BASE_PATH)
+@RequestMapping("/maps")
 public class MapController {
-    private final MapService mapService;
-    private final LoginContextHolder loginContextHolder;
-    private final CustomSecurityContext securityContext;
 
-    public MapController(MapService mapService,
-                         LoginContextHolder loginContextHolder,
-                         CustomSecurityContext securityContext) {
-        this.mapService = mapService;
-        this.loginContextHolder = loginContextHolder;
-        this.securityContext = securityContext;
-    }
+    private NodeEngineImpl nodeEngine;
 
     @GetMapping(value = "/{mapName}/{key}")
     @Operation(summary = "Find value by key in a map",
-            tags = {"Map Controller"},
+            tags = {"map controller"},
             description = "Returns if there is a corresponding value for given mapName and key",
             responses = {
                     @ApiResponse(responseCode = "200", description = "OK"),
                     @ApiResponse(responseCode = "204", description = "No Content"),
                     @ApiResponse(responseCode = "400", description = "Bad Request"),
-                    @ApiResponse(responseCode = "403", description = "Forbidden"),
                     @ApiResponse(responseCode = "404", description = "Not found"),
                     @ApiResponse(responseCode = "500", description = "Internal Server Error")
             })
@@ -70,30 +50,21 @@ public class MapController {
             schema = @Schema()) @PathVariable("mapName") String mapName,
                                   @Parameter(in = ParameterIn.PATH, description = "The key of map", required = true,
                                           schema = @Schema()) @PathVariable("key") String key) {
-/*        try {
-            securityContext.getSecurityContext()
-                    .checkPermission(loginContextHolder.getLoginContext().getSubject(),
-                            new MapPermission(mapName, ActionConstants.ACTION_READ));
-        } catch (SecurityException e) {
-            System.out.println("checkPermission security exception: " + e);
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-        }*/
 
-        Object value = mapService.getMap(mapName, key);
-
+        Object value = nodeEngine.getHazelcastInstance().getMap(mapName).get(key);
         if (value == null) {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+            return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(value.toString());
     }
 
     @PostMapping(value = "/{mapName}/{key}")
     @Operation(summary = "Add a new value to the map",
-            tags = {"Map Controller"},
+            tags = {"map controller"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "OK"),
+                    @ApiResponse(responseCode = "204", description = "No Content"),
                     @ApiResponse(responseCode = "400", description = "Bad Request"),
-                    @ApiResponse(responseCode = "403", description = "Forbidden"),
                     @ApiResponse(responseCode = "500", description = "Internal Server Error")
             })
     ResponseEntity<String> postMap(@Parameter(in = ParameterIn.PATH, description = "The map name", required = true,
@@ -102,16 +73,15 @@ public class MapController {
                                            schema = @Schema()) @PathVariable("key") String key,
                                    @Parameter(in = ParameterIn.DEFAULT, description = "", required = true,
                                            schema = @Schema()) @RequestBody String value) {
-/*        try {
-            securityContext.getSecurityContext()
-                    .checkPermission(loginContextHolder.getLoginContext().getSubject(),
-                            new MapPermission(mapName, "write"));
-        } catch (SecurityException e) {
-            System.out.println("checkPermission security exception: " + e);
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
-        }*/
-
-        mapService.putMap(mapName, key, value);
+        nodeEngine.getHazelcastInstance().getMap(mapName).set(key, value);
         return ResponseEntity.ok("(" + key + " : " + value + ") is added to map " + mapName);
+    }
+
+    public NodeEngineImpl getNodeEngine() {
+        return nodeEngine;
+    }
+
+    public void setNodeEngine(NodeEngineImpl nodeEngine) {
+        this.nodeEngine = nodeEngine;
     }
 }
