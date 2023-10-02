@@ -15,9 +15,7 @@
  */
 package com.hazelcast.rest.controller;
 
-import com.hazelcast.rest.constant.Paths;
 import com.hazelcast.rest.model.ClusterStatusModel;
-import com.hazelcast.rest.model.StatusCodeAndMessage;
 import com.hazelcast.rest.service.ClusterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -27,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+
 @RestController
 public class ClusterController {
     private final ClusterService clusterService;
@@ -35,7 +34,7 @@ public class ClusterController {
         this.clusterService = clusterService;
     }
 
-    @GetMapping(value = Paths.V1_CLUSTER_BASE_PATH)
+    @GetMapping(value = "/cluster")
     @Operation(summary = "Check the status of the cluster",
             tags = {"Cluster Controller"},
             description = "Check the status of the cluster",
@@ -46,11 +45,11 @@ public class ClusterController {
                     )),
                     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = StatusCodeAndMessage.class)
+                            schema = @Schema(implementation = Exception.class)
                     )),
                     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = StatusCodeAndMessage.class)
+                            schema = @Schema(implementation = Exception.class)
                     ))
             })
     ResponseEntity<ClusterStatusModel> getClusterStatus() {

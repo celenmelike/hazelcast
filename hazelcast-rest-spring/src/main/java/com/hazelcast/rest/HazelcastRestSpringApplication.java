@@ -15,20 +15,16 @@
  */
 package com.hazelcast.rest;
 
-import com.hazelcast.spi.impl.NodeEngineImpl;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class HazelcastRestSpringApplication {
-
-    private NodeEngineImpl nodeEngine;
-
     public static void main(String[] args) {
         SpringApplication.run(HazelcastRestSpringApplication.class, args);
     }
 
-    public NodeEngineImpl getNodeEngine() {
-        return nodeEngine;
+    public void nodeEngine() {
+
     }
 }
