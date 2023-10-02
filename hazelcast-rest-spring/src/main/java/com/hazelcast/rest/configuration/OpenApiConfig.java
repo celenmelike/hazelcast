@@ -15,9 +15,7 @@
  */
 package com.hazelcast.rest.configuration;
 
-import com.hazelcast.rest.constant.Paths;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.servers.Server;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
