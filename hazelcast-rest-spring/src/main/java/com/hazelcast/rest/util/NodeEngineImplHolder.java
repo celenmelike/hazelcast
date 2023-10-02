@@ -16,17 +16,19 @@
 package com.hazelcast.rest.util;
 
 import com.hazelcast.spi.impl.NodeEngineImpl;
+import lombok.Data;
 import org.springframework.stereotype.Component;
 
+@Data
 @Component
 public class NodeEngineImplHolder {
     private NodeEngineImpl nodeEngine;
 
-    public NodeEngineImpl getNodeEngine() {
+/*    public NodeEngineImpl getNodeEngine() {
         return nodeEngine;
-    }
+    }*/
 
-    public void setNodeEngine(NodeEngineImpl nodeEngine) {
-        this.nodeEngine = nodeEngine;
-    }
+   // public void setNodeEngine(NodeEngineImpl nodeEngine) {
+   //     this.nodeEngine = nodeEngine;
+   // }
 }

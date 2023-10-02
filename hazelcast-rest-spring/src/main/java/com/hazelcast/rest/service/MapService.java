@@ -16,15 +16,13 @@
 package com.hazelcast.rest.service;
 
 import com.hazelcast.rest.util.NodeEngineImplHolder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class MapService {
-    private final NodeEngineImplHolder nodeEngineImplHolder;
-
-    public MapService(NodeEngineImplHolder nodeEngineImplHolder) {
-        this.nodeEngineImplHolder = nodeEngineImplHolder;
-    }
+    @Autowired
+    NodeEngineImplHolder nodeEngineImplHolder;
 
     public Object getMap(String mapName, String key) {
         return nodeEngineImplHolder.getNodeEngine().getHazelcastInstance().getMap(mapName).get(key);

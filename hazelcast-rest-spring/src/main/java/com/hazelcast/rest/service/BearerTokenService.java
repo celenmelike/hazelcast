@@ -15,35 +15,53 @@
  */
 package com.hazelcast.rest.service;
 
-import com.hazelcast.rest.model.User;
-import com.hazelcast.rest.security.TokenAuthenticationFilter;
+import com.hazelcast.rest.security.JWTAuthorizationFilter;
+import com.hazelcast.rest.util.NodeEngineImplHolder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class BearerTokenService {
+    @Autowired
+    NodeEngineImplHolder nodeEngineImplHolder;
 
-    private final int expirationTimeMillis = 900000;
+    private final int expirationTimeMillis = 600000;
 
-    public String getJWTToken(String[] authorities, User user) {
+    public String getJWTToken() {
+        List<GrantedAuthority> grantedAuthorities = AuthorityUtils
+                .commaSeparatedStringToAuthorityList("ROLE_USER");
 
-        SecretKey secret = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-        TokenAuthenticationFilter.secret = secret;
-
-        String token= Jwts
+        String token = Jwts
                 .builder()
-                .setId(user.getName())
-                .claim("username", user.getName())
-                .claim("authorities", String.join(", ", authorities))
+                .setId(getSecret())
+                .setSubject(getSecret())
+                .claim("authorities",
+                        grantedAuthorities.stream()
+                                .map(GrantedAuthority::getAuthority)
+                                .collect(Collectors.toList()))
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTimeMillis))
-                .signWith(secret).compact();
+                .signWith(SignatureAlgorithm.HS256,
+                        getSecret().getBytes()).compact();
 
         return "Bearer " + token;
+    }
+
+    private String getSecret() {
+        String secret = nodeEngineImplHolder.getNodeEngine().getHazelcastInstance().getConfig().getSecurityConfig()
+                .getRealmConfig(nodeEngineImplHolder.getNodeEngine().getHazelcastInstance().getConfig()
+                        .getSecurityConfig().getMemberRealm())
+                .getUsernamePasswordIdentityConfig().toString();
+        JWTAuthorizationFilter.setSecret(secret);
+
+        return secret;
     }
 }
