@@ -16,18 +16,12 @@
 package com.hazelcast.rest.security;
 
 import com.hazelcast.security.impl.SecurityContextImpl;
+import lombok.Data;
 import org.springframework.stereotype.Component;
 
+@Data
 @Component
 public class CustomSecurityContext {
 
     private SecurityContextImpl securityContext;
-
-    public SecurityContextImpl getSecurityContext() {
-        return securityContext;
-    }
-
-    public void setSecurityContext(SecurityContextImpl securityContext) {
-        this.securityContext = securityContext;
-    }
 }
