@@ -15,7 +15,9 @@
  */
 package com.hazelcast.rest.controller;
 
+import com.hazelcast.rest.constant.Paths;
 import com.hazelcast.rest.model.ClusterStatusModel;
+import com.hazelcast.rest.model.StatusCodeAndMessage;
 import com.hazelcast.rest.service.ClusterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,7 +35,7 @@ public class ClusterController {
         this.clusterService = clusterService;
     }
 
-    @GetMapping(value = "/cluster")
+    @GetMapping(value = Paths.V1_CLUSTER_BASE_PATH)
     @Operation(summary = "Check the status of the cluster",
             tags = {"Cluster Controller"},
             description = "Check the status of the cluster",
@@ -44,11 +46,11 @@ public class ClusterController {
                     )),
                     @ApiResponse(responseCode = "403", description = "Forbidden", content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = Exception.class)
+                            schema = @Schema(implementation = StatusCodeAndMessage.class)
                     )),
                     @ApiResponse(responseCode = "500", description = "Internal Server Error", content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = Exception.class)
+                            schema = @Schema(implementation = StatusCodeAndMessage.class)
                     ))
             })
     ResponseEntity<ClusterStatusModel> getClusterStatus() {

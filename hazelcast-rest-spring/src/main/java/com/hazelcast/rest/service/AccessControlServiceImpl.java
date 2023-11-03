@@ -29,32 +29,67 @@ import com.hazelcast.internal.nio.ConnectionLifecycleListener;
 import com.hazelcast.internal.server.tcp.TcpServerConnection;
 import com.hazelcast.internal.server.tcp.TcpServerConnectionManager;
 import com.hazelcast.rest.security.CustomSecurityContext;
+import com.hazelcast.rest.security.AccessControlService;
+import com.hazelcast.rest.security.AuthenticationContext;
 import com.hazelcast.rest.util.NodeEngineImplHolder;
+import com.hazelcast.security.ClusterRolePrincipal;
+import com.hazelcast.security.Credentials;
+import com.hazelcast.security.SimpleTokenCredentials;
 import com.hazelcast.security.UsernamePasswordCredentials;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.security.Permission;
+import java.security.Principal;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public class LoginContextService {
+public class AccessControlServiceImpl implements AccessControlService {
 
     private final NodeEngineImplHolder nodeEngineImplHolder;
     private final CustomSecurityContext securityContext;
 
-    public LoginContextService(NodeEngineImplHolder nodeEngineImplHolder, CustomSecurityContext securityContext) {
+    public AccessControlServiceImpl(NodeEngineImplHolder nodeEngineImplHolder, CustomSecurityContext securityContext) {
         this.nodeEngineImplHolder = nodeEngineImplHolder;
         this.securityContext = securityContext;
     }
 
-    public LoginContext getLoginContext(UsernamePasswordCredentials credentials) {
+    @Nonnull
+    @Override
+    public String[] authenticate(@Nonnull AuthenticationContext ctx) throws LoginException {
+        Credentials creds;
+        if (ctx.getUsername() != null) {
+            creds = new UsernamePasswordCredentials(ctx.getUsername(), ctx.getPassword());
+        } else if (ctx.getToken() != null) {
+            creds = new SimpleTokenCredentials(ctx.getToken());
+        } else {
+            throw new LoginException("Neither username/password nor token provided.");
+        }
+        //  LoginContext lc = securityContext.createRestLoginContext(null, creds, ctx.getRemoteAddress());
+        LoginContext lc = getLoginContext(creds);
+        return lc.getSubject().getPrincipals(ClusterRolePrincipal.class).stream().map(Principal::getName).toArray(String[]::new);
+    }
+
+    @Override
+    public boolean isPermissionGranted(@Nonnull Permission permission, @Nullable InetAddress remoteAddress, @Nonnull String... assignedRoles) {
+        return false;
+    }
+
+    @Override
+    public boolean isResourceAccessGranted(@Nonnull String resourcePath, @Nonnull String methodName, @Nullable InetAddress remoteAddress, @Nonnull String... assignedRoles) {
+        return false;
+    }
+
+    private LoginContext getLoginContext(Credentials credentials) {
         LocalChannel channel = new LocalChannel(nodeEngineImplHolder
                 .getNodeEngine().getHazelcastInstance().getConfig().getNetworkConfig().getPort());
 
@@ -77,7 +112,7 @@ public class LoginContextService {
             System.out.println("error login: " + e.getMessage());
             throw new RuntimeException(e);
         }
-        System.out.println("loginContext: " + loginContext);
+        System.out.println("loginContext.getSubject(): " + loginContext.getSubject());
         return loginContext;
     }
 
