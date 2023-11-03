@@ -16,30 +16,33 @@
 package com.hazelcast.rest.service;
 
 import com.hazelcast.rest.model.User;
-import com.hazelcast.rest.security.LoggingFilter;
+import com.hazelcast.rest.security.TokenAuthenticationFilter;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
 
-import javax.security.auth.Subject;
+import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Service
 public class BearerTokenService {
 
-    private final int expirationTimeMillis = 600000;
+    private final int expirationTimeMillis = 900000;
 
-    public String getJWTToken(Subject subject, User user) {
-        String token = Jwts
+    public String getJWTToken(String[] authorities, User user) {
+
+        SecretKey secret = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+        TokenAuthenticationFilter.secret = secret;
+
+        String token= Jwts
                 .builder()
                 .setId(user.getName())
-                .setSubject(subject.toString())
                 .claim("username", user.getName())
+                .claim("authorities", String.join(", ", authorities))
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTimeMillis))
-                .signWith(SignatureAlgorithm.HS256,
-                        (user.getName() + user.getPassword()).getBytes()).compact();
-        LoggingFilter.setSecret(user.getName() + user.getPassword());
+                .signWith(secret).compact();
 
         return "Bearer " + token;
     }
