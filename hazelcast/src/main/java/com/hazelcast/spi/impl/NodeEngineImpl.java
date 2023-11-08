@@ -27,6 +27,7 @@ import com.hazelcast.dataconnection.impl.DataConnectionServiceImpl;
 import com.hazelcast.dataconnection.impl.InternalDataConnectionService;
 import com.hazelcast.instance.impl.Node;
 import com.hazelcast.internal.ascii.rest.InternalRestService;
+import com.hazelcast.internal.ascii.rest.MissingRestService;
 import com.hazelcast.internal.cluster.ClusterService;
 import com.hazelcast.internal.diagnostics.Diagnostics;
 import com.hazelcast.internal.dynamicconfig.ClusterWideConfigurationService;
@@ -224,13 +225,21 @@ public class NodeEngineImpl implements NodeEngine {
         }
     }
 
-    private InternalRestService createRestService() throws ClassNotFoundException,
-            NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    private InternalRestService createRestService() {
         Class<?> clz;
-
-        clz = Class.forName("com.hazelcast.rest.service.RestServiceImpl");
-        Constructor<?> constructor = clz.getConstructor(getClass());
-        return (InternalRestService) constructor.newInstance(this);
+        try {
+            clz = Class.forName("com.hazelcast.rest.service.RestServiceImpl");
+        }  catch (ClassNotFoundException e) {
+            return new MissingRestService();
+        }
+        try {
+            Constructor<?> constructor = clz.getConstructor(getClass());
+            return (InternalRestService) constructor.newInstance(this);
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException
+                 | ClassCastException e) {
+            // this isn't normal - we found the class, but there's something unexpected
+            throw new RuntimeException(e);
+        }
     }
 
     public TpcServerBootstrap getTpcServerBootstrap() {
@@ -302,6 +311,7 @@ public class NodeEngineImpl implements NodeEngine {
         operationService.start();
         splitBrainProtectionService.start();
         sqlService.start();
+        restService.start();
         tpcServerBootstrap.start();
         diagnostics.start();
         node.getNodeExtension().registerPlugins(diagnostics);
